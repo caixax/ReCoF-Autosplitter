@@ -24,6 +24,7 @@ namespace LiveSplit.ReCoFSplit
         readonly ListBox splits = new ListBox { Height = 150, Width = 410, SelectionMode = SelectionMode.None };
         readonly CheckBox autoStart = Box("Enable AutoStart");
         readonly CheckBox autoReset = Box("Enable AutoReset");
+        readonly CheckBox writeLog = Box("Write what the autosplitter sees to ReCoFSplit.log (next to LiveSplit.exe)");
         readonly Label status = new Label { AutoSize = true, MaximumSize = new Size(430, 0) };
         bool loading;
 
@@ -87,20 +88,24 @@ namespace LiveSplit.ReCoFSplit
 
             var page = Column();
             page.AutoScroll = true;
-            page.Controls.AddRange(new Control[] { splitGroup, startGroup, status });
+            page.Controls.AddRange(new Control[] { splitGroup, startGroup, writeLog, status });
             Controls.Add(page);
 
             category.SelectedIndexChanged += (s, e) => OnCategory();
-            foreach (CheckBox box in new[] { autoSplit, gameEnd, mapChange, chapterChange, waterGlitch, undoOnLoad, autoStart, autoReset })
+            foreach (CheckBox box in new[] { autoSplit, gameEnd, mapChange, chapterChange, waterGlitch, undoOnLoad, autoStart, autoReset, writeLog })
                 box.CheckedChanged += (s, e) => OnBox();
 
             Show(Values);
         }
 
-        public void SetStatus(string text)
+        /// <summary>Shows the reader's status; true when it changed.</summary>
+        public bool SetStatus(string text)
         {
-            if (status.Text != text)
-                status.Text = text;
+            if (status.Text == text)
+                return false;
+
+            status.Text = text;
+            return true;
         }
 
         // a category sets the split rules and lists its splits
@@ -132,6 +137,7 @@ namespace LiveSplit.ReCoFSplit
             Values.UndoOnLoad = undoOnLoad.Checked;
             Values.AutoStart = autoStart.Checked;
             Values.AutoReset = autoReset.Checked;
+            Values.WriteLog = writeLog.Checked;
 
             Preset preset = Presets.Find(Values.Preset);
             if (preset != null && (preset.MapChange != Values.MapChange || preset.ChapterChange != Values.ChapterChange ||
@@ -154,6 +160,7 @@ namespace LiveSplit.ReCoFSplit
             undoOnLoad.Checked = v.UndoOnLoad;
             autoStart.Checked = v.AutoStart;
             autoReset.Checked = v.AutoReset;
+            writeLog.Checked = v.WriteLog;
             category.SelectedItem = Presets.Find(v.Preset) != null ? v.Preset : Presets.Custom;
 
             splits.BeginUpdate();
@@ -181,6 +188,7 @@ namespace LiveSplit.ReCoFSplit
             SettingsHelper.CreateSetting(document, parent, "UndoOnLoad", Values.UndoOnLoad);
             SettingsHelper.CreateSetting(document, parent, "AutoStart", Values.AutoStart);
             SettingsHelper.CreateSetting(document, parent, "AutoReset", Values.AutoReset);
+            SettingsHelper.CreateSetting(document, parent, "WriteLog", Values.WriteLog);
             return parent;
         }
 
@@ -199,6 +207,7 @@ namespace LiveSplit.ReCoFSplit
             Values.UndoOnLoad = SettingsHelper.ParseBool(e["UndoOnLoad"], true);
             Values.AutoStart = SettingsHelper.ParseBool(e["AutoStart"], true);
             Values.AutoReset = SettingsHelper.ParseBool(e["AutoReset"], true);
+            Values.WriteLog = SettingsHelper.ParseBool(e["WriteLog"], false);
             Show(Values);
         }
     }

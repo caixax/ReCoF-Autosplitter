@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.Model;
@@ -24,6 +25,30 @@ namespace LiveSplit.ReCoFSplit
         {
             this.state = state;
             model = new TimerModel { CurrentState = state };
+            rules.Log = Log;
+        }
+
+        // ReCoFSplit.log next to LiveSplit.exe, when the settings ask for it
+        void Log(string text)
+        {
+            if (!settings.Values.WriteLog)
+                return;
+
+            try
+            {
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ReCoFSplit.log");
+                var info = new FileInfo(path);
+                if (info.Exists && info.Length > 1024 * 1024)
+                    info.Delete();
+
+                File.AppendAllText(path, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "  " + text + Environment.NewLine);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         public override string ComponentName
@@ -54,7 +79,8 @@ namespace LiveSplit.ReCoFSplit
         public override void Update(IInvalidator invalidator, LiveSplitState lsState, float width, float height, LayoutMode mode)
         {
             GameSample current = reader.Read();
-            settings.SetStatus(reader.Status);
+            if (settings.SetStatus(reader.Status))
+                Log(reader.Status);
 
             if (current == null)
             {
@@ -77,10 +103,14 @@ namespace LiveSplit.ReCoFSplit
             bool reset = current.TimerState == 0 && previous.TimerState != 0;
 
             if ((reset || started) && s.AutoReset && state.CurrentPhase != TimerPhase.NotRunning)
+            {
+                Log(started ? "new run in the game: LiveSplit reset" : "the game's timer was reset: LiveSplit reset");
                 model.Reset();
+            }
 
             if (started && s.AutoStart && state.CurrentPhase == TimerPhase.NotRunning)
             {
+                Log(string.Format("run {0} started on {1}", current.RunId, current.Map == "" ? "(no map yet)" : current.Map));
                 model.Start();
                 rules.OnRunStart();
             }
@@ -100,10 +130,16 @@ namespace LiveSplit.ReCoFSplit
                 SplitRules.Result result = rules.Update(previous, current, s);
 
                 for (int i = 0; i < result.Undo && state.CurrentSplitIndex > 0; i++)
+                {
+                    Log("undo split");
                     model.UndoSplit();
+                }
 
                 if (result.Split && state.CurrentPhase == TimerPhase.Running)
+                {
+                    Log(string.Format("split {0} at {1:0.000} s", state.CurrentSplitIndex + 1, current.Time));
                     model.Split();
+                }
             }
 
             previous = current;

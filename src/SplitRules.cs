@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace LiveSplit.ReCoFSplit
@@ -16,6 +17,7 @@ namespace LiveSplit.ReCoFSplit
         public bool UndoOnLoad = true;      // "Undo when loading the savefile"
         public bool AutoStart = true;
         public bool AutoReset = true;
+        public bool WriteLog = false;       // ReCoFSplit.log next to LiveSplit.exe
         public string Preset = Presets.All[0].Name;
 
         public void Apply(Preset preset)
@@ -69,6 +71,15 @@ namespace LiveSplit.ReCoFSplit
         bool saveflag;          // a save was made in this game
         bool lakeskip;          // the Lake Skip was taken in this run
         bool chapter3 = true;   // c_park3 to c_park2 still ends chapter 3
+        bool waitingForMap;     // the run started before its first map was in place
+
+        // what the rules decide, for the log
+        public Action<string> Log;
+
+        static readonly HashSet<string> Menus = new HashSet<string>
+        {
+            "c_game_menu1.bsp", "c_loadgame.bsp", "c_difficulty_settings.bsp", "c_intro.bsp", "",
+        };
 
         public struct Result
         {
@@ -84,11 +95,28 @@ namespace LiveSplit.ReCoFSplit
             chapters = 0;
         }
 
-        /// <summary>The script's start block: a run starts.</summary>
+        /// <summary>
+        /// The script's start block: a run starts. The script starts while the first map loads, so its rules never see
+        /// the menu or the empty map name that come before it; ReCoF's timer can start earlier (rc_timer_start after
+        /// "map c_nightmare" in a bind), and the script's load and death test would take that menu for a save being
+        /// loaded and turn the map splits off. So the rules wait until the run's first map is in place, and a run
+        /// starts with no splits to undo and no save made.
+        /// </summary>
         public void OnRunStart()
         {
             lakeskip = false;
             chapter3 = true;
+            flag = true;
+            maps = 0;
+            chapters = 0;
+            saveflag = false;
+            waitingForMap = true;
+        }
+
+        void Say(string text)
+        {
+            if (Log != null)
+                Log(text);
         }
 
         public static bool IsEnding(GameSample s)
@@ -128,11 +156,21 @@ namespace LiveSplit.ReCoFSplit
         {
             var result = new Result();
 
+            if (waitingForMap)
+            {
+                if (Menus.Contains(cur.Map) || cur.Loading == 0 || cur.Alive == 0)
+                    return result;
+
+                waitingForMap = false;
+                Say("first map in place: " + cur.Map);
+            }
+
             // the script's gameTime block: a save made, and a load, a death or the menu that brings an older state
             if (old.SaveState != 0 && cur.SaveState == 0 && cur.Music == "Saved")
             {
                 maps = 0;
                 saveflag = true;
+                Say("save made on " + cur.Map);
             }
 
             bool loadOrDeath = (cur.MenuMap == "c_loadgame.bsp" && cur.Loading != 0) || cur.Alive == 0
@@ -140,6 +178,9 @@ namespace LiveSplit.ReCoFSplit
 
             if (loadOrDeath)
             {
+                if (maps > 0 || chapters > 0 || flag)
+                    Say(string.Format("load or death (map \"{0}\" loading {1} alive {2}): undo {3}", cur.Map, cur.Loading == 0, cur.Alive != 0, settings.MapChange ? maps : chapters));
+
                 if (settings.MapChange)
                 {
                     flag = true;
@@ -173,6 +214,12 @@ namespace LiveSplit.ReCoFSplit
 
             bool ending = settings.SplitOnGameEnd && IsEnding(cur) && !IsEnding(old);
 
+            if (old.Map != cur.Map)
+                Say(string.Format("map {0} -> {1}, splits on: {2}", old.Map == "" ? "(none)" : old.Map, cur.Map == "" ? "(none)" : cur.Map, flag));
+
+            if (ending)
+                Say("ending: " + (cur.Map == "c_doc_ending.bsp" ? cur.Map : cur.Music));
+
             if (settings.MapChange)
             {
                 if (MapChangeSplits(old, cur, settings) || ending)
@@ -184,6 +231,9 @@ namespace LiveSplit.ReCoFSplit
                 }
                 else if (old.Igt == 0 && cur.Igt > 0)
                 {
+                    if (!flag)
+                        Say("splits on again: " + cur.Map + " drew its first frame");
+
                     flag = true;
                 }
             }

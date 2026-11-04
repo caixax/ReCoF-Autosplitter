@@ -52,6 +52,8 @@ Differences from `cryoffear.asl`:
 - The script splits on an ending on every update while its music plays; the component splits once, when the ending starts.
 - The script's crash handler test (crashhandler.dll) and its death screen test on combase.dll are left out; the second reads data of a Windows file that changes between Windows builds.
 - The script starts and resets while the first map of a campaign loads; the game does it on the first frame that map is drawn, since no game frame runs during a load.
+- A run can start before its first map is in place (`rc_timer_start` in a bind, after `map c_nightmare`). The script's load and death test would take the menu or the empty map name before it for a save being loaded and turn the map splits off, so the rules wait for the run's first map. A run also starts with no splits to undo and no save made; the script keeps its save flag from earlier runs, so a death before any save could undo every split of the run.
+- "Write what the autosplitter sees to ReCoFSplit.log" (off by default) logs the starts, resets, map changes, saves, loads, deaths, undos and splits next to LiveSplit.exe.
 
 ## Build
 
