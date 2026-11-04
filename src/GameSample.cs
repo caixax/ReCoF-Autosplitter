@@ -5,13 +5,13 @@ namespace LiveSplit.ReCoFSplit
     /// </summary>
     public sealed class GameSample
     {
-        // the cryoffear.asl values, in the script's sense: the game reports them (g_RcRunTimer), and the decal
-        // counter, the music and the save state come through g_RcAutosplit
+        // the cryoffear.asl values, in the script's sense: the game reports them (g_RcRunTimer), and the last draw
+        // time, the music and the save state come through g_RcAutosplit
         public float Pause;         // nonzero while the game is paused
         public float Loading;       // 0 while a map loads
         public float CanMove;       // 0 while the player cannot move
         public float Alive;         // 0 on the death screen
-        public float Igt;           // the decal counter: 0 until a map's decals are loaded
+        public float Igt;           // lastDrawTime: the client time of the last frame drawn, 0 from a map's start to its first frame
         public float SaveState;     // nonzero while a tape recorder save is pending
         public int Cutscene;        // nonzero while the cutscene bars show
         public string Map = "";     // the client's map, as "c_nightmare.bsp"

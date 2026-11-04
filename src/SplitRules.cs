@@ -63,7 +63,7 @@ namespace LiveSplit.ReCoFSplit
         };
 
         // the script's vars
-        bool flag = true;       // map changes may split; off after an undo until the loaded map has its decals
+        bool flag = true;       // map changes may split; off after an undo until the loaded map draws a frame
         int maps;               // map splits since the last save
         int chapters;           // chapter splits since the last save
         bool saveflag;          // a save was made in this game

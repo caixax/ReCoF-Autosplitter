@@ -43,7 +43,7 @@ For example: `bind DEL "map c_nightmare;rc_timer_reset;rc_timer_start"`. `rc_hud
 
 ## How it reads the game
 
-The component reads cof.exe's memory as `cryoffear.asl` does, about 60 times a second, through two blocks client.dll fills, found by their tags: `ReCoF_AUTOSPLIT`, version 1 (pointers to the decal counter, the music name and the save state, read live) and `ReCoF_RUNTIMER`, version 2 (the run timer, its state, time and run number, and the game state: map, loading, paused, dead, cutscene bars, frozen, written by the game every frame).
+The component reads cof.exe's memory as `cryoffear.asl` does, about 60 times a second, through two blocks client.dll fills, found by their tags: `ReCoF_AUTOSPLIT`, version 1 (pointers to the last draw time, the music name and the save state, read live) and `ReCoF_RUNTIMER`, version 2 (the run timer, its state, time and run number, and the game state: map, loading, paused, dead, cutscene bars, frozen, written by the game every frame).
 
 The script's hw.dll addresses are not read. They only happen to follow the game's state in retail: its "loading" is the text of light style 21, its "can move" the name of the 27th physics entity of the server's player move, its "paused" a field of player 16 in a client frame. In ReCoF they say loading or paused all the time, so the game reports its real state instead: the engine's pause flag, a map not drawn yet since it loaded, the player frozen or without speed, no health, the level name.
 

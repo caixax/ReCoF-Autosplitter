@@ -9,7 +9,7 @@ namespace LiveSplit.ReCoFSplit
     /// <summary>
     /// Reads cof.exe's memory, as cryoffear.asl does, through two blocks client.dll fills and that are found by
     /// their tags: g_RcAutosplit ("ReCoF_AUTOSPLIT", version 1: pointers to the client values the script reads, the
-    /// decal counter, the music name and the save state, read live) and g_RcRunTimer ("ReCoF_RUNTIMER", version 2:
+    /// last draw time, the music name and the save state, read live) and g_RcRunTimer ("ReCoF_RUNTIMER", version 2:
     /// the run timer and the game state, written by the game every frame). The script's hw.dll addresses are not
     /// read: they only happen to follow the game's state in retail (its "loading" is the text of a light style, its
     /// "can move" the name of a physics entity), and in ReCoF they do not, so the game reports its real state.

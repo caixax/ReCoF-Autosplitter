@@ -45,7 +45,7 @@ static class Program
             Last = next;
         }
 
-        // a level change: the map name changes while the new map's decals are not loaded, then they load
+        // a level change: the map name changes before the new map draws a frame, then it draws
         public void Go(string map)
         {
             Tick(s => { s.Map = map; s.Igt = 0; s.Loading = 0; });
