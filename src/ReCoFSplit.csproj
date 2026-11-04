@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The LiveSplit component. It builds against a LiveSplit folder (LiveSplit.Core.dll and UpdateManager.dll):
+      dotnet build src/ReCoFSplit.csproj -c Release -p:LiveSplitDir="C:\path\to\LiveSplit"
+    or set the LIVESPLIT_DIR environment variable. The output, LiveSplit.ReCoFSplit.dll, goes in LiveSplit's
+    Components folder.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net481</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>LiveSplit.ReCoFSplit</AssemblyName>
+    <RootNamespace>LiveSplit.ReCoFSplit</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <Version>0.1.0</Version>
+    <Product>ReCoF Autosplitter</Product>
+    <Authors>caixax</Authors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <LiveSplitDir Condition="'$(LiveSplitDir)' == ''">$(LIVESPLIT_DIR)</LiveSplitDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="LiveSplit.Core">
+      <HintPath>$(LiveSplitDir)\LiveSplit.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UpdateManager">
+      <HintPath>$(LiveSplitDir)\UpdateManager.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckLiveSplitDir" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(LiveSplitDir)\LiveSplit.Core.dll')">
+    <Error Text="LiveSplitDir (or the LIVESPLIT_DIR environment variable) must name a LiveSplit folder, the one with LiveSplit.Core.dll." />
+  </Target>
+
+</Project>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Checks of the split rules, without LiveSplit. Run it with dotnet run and the project folder tests. -->
+  <PropertyGroup>
+    <TargetFramework>net481</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>7.3</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\src\GameSample.cs" />
+    <Compile Include="..\src\SplitRules.cs" />
+    <Compile Include="..\src\Presets.cs" />
+  </ItemGroup>
+
+</Project>
