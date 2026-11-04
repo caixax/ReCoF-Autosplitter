@@ -7,31 +7,26 @@ using System.Text;
 namespace LiveSplit.ReCoFSplit
 {
     /// <summary>
-    /// Reads cof.exe's memory, as cryoffear.asl does. hw.dll values come from the offsets the script reads, which
-    /// ReCoF keeps (tools/check_runner.py in the ReCoF repository fails a build that moves them). client.dll values
-    /// come through two blocks client.dll fills at start-up and that are found by their tags: g_RcAutosplit
-    /// ("ReCoF_AUTOSPLIT", pointers to the four values the script reads in client.dll) and g_RcRunTimer
-    /// ("ReCoF_RUNTIMER", the run timer that rc_timer_start, rc_timer_stop and rc_timer_reset work).
+    /// Reads cof.exe's memory, as cryoffear.asl does, through two blocks client.dll fills and that are found by
+    /// their tags: g_RcAutosplit ("ReCoF_AUTOSPLIT", version 1: pointers to the client values the script reads, the
+    /// decal counter, the music name and the save state, read live) and g_RcRunTimer ("ReCoF_RUNTIMER", version 2:
+    /// the run timer and the game state, written by the game every frame). The script's hw.dll addresses are not
+    /// read: they only happen to follow the game's state in retail (its "loading" is the text of a light style, its
+    /// "can move" the name of a physics entity), and in ReCoF they do not, so the game reports its real state.
     /// </summary>
     public sealed class GameReader : IDisposable
     {
-        const int HwPause = 0x11119E4;
-        const int HwLoading = 0x10D279C;
-        const int HwMap = 0xF1AA15;
-        const int HwMenuMap = 0x820495;
-        const int HwCanMove = 0x9FDC30;
-        const int HwAlive = 0x1F39F0;
+        const int TimerSize = 128;
 
-        // each tag is followed by its block's version, 1
-        static readonly byte[] AutosplitTag = Tag("ReCoF_AUTOSPLIT");
-        static readonly byte[] TimerTag = Tag("ReCoF_RUNTIMER");
+        // each tag is followed by its block's version
+        static readonly byte[] AutosplitTag = Tag("ReCoF_AUTOSPLIT", 1);
+        static readonly byte[] TimerTag = Tag("ReCoF_RUNTIMER", 2);
 
         Process process;
         IntPtr handle = IntPtr.Zero;
-        IntPtr hw = IntPtr.Zero;
         IntPtr client = IntPtr.Zero;
         int clientSize;
-        IntPtr cutscenePtr, igtPtr, musicPtr, savestatePtr;
+        IntPtr igtPtr, musicPtr, savestatePtr;
         IntPtr timerBlock = IntPtr.Zero;
         int nextLook;
 
@@ -39,12 +34,18 @@ namespace LiveSplit.ReCoFSplit
         public string ReCoFVersion { get; private set; } = "";
         public bool Attached { get { return timerBlock != IntPtr.Zero; } }
 
-        static byte[] Tag(string text)
+        static byte[] Tag(string text, byte version)
         {
             var tag = new byte[20];
             Encoding.ASCII.GetBytes(text, 0, text.Length, tag, 0);
-            tag[16] = 1;
+            tag[16] = version;
             return tag;
+        }
+
+        static string Text(byte[] b, int offset, int max)
+        {
+            int n = Array.IndexOf(b, (byte)0, offset, max);
+            return Encoding.ASCII.GetString(b, offset, (n < 0 ? offset + max : n) - offset);
         }
 
         /// <summary>A sample, or null when the game is not running or not ready.</summary>
@@ -56,23 +57,25 @@ namespace LiveSplit.ReCoFSplit
             try
             {
                 var s = new GameSample();
-                s.Pause = ReadFloat(hw + HwPause);
-                s.Loading = ReadFloat(hw + HwLoading);
-                s.CanMove = ReadFloat(hw + HwCanMove);
-                s.Alive = ReadFloat(hw + HwAlive);
-                s.Map = ReadString(hw + HwMap, 40);
-                s.MenuMap = ReadString(hw + HwMenuMap, 40);
-
-                s.Cutscene = ReadInt(cutscenePtr);
-                s.Igt = ReadFloat(igtPtr);
-                s.Music = ReadString(musicPtr, 40);
-                s.SaveState = ReadFloat(savestatePtr);
-
-                byte[] t = ReadBytes(timerBlock, 56);
+                byte[] t = ReadBytes(timerBlock, TimerSize);
                 s.TimerState = BitConverter.ToInt32(t, 20);
                 s.Time = BitConverter.ToDouble(t, 24);
                 s.RunId = BitConverter.ToInt32(t, 32);
                 s.Counting = BitConverter.ToInt32(t, 36) != 0;
+
+                // the script's values, in the script's sense (its "loading" is 0 while a map loads)
+                s.Map = Text(t, 56, 48);
+                s.MenuMap = s.Map;
+                s.Loading = BitConverter.ToInt32(t, 104) != 0 ? 0 : 1;
+                s.Pause = BitConverter.ToInt32(t, 108);
+                s.Alive = BitConverter.ToInt32(t, 112) != 0 ? 0 : 1;
+                s.Cutscene = BitConverter.ToInt32(t, 116);
+                s.CanMove = BitConverter.ToInt32(t, 120) != 0 ? 0 : 1;
+
+                // live, so a map load that holds the game's frames is still seen
+                s.Igt = ReadFloat(igtPtr);
+                s.Music = ReadString(musicPtr, 40);
+                s.SaveState = ReadFloat(savestatePtr);
                 return s;
             }
             catch (Win32Exception)
@@ -115,10 +118,10 @@ namespace LiveSplit.ReCoFSplit
                 }
             }
 
-            if (hw == IntPtr.Zero || client == IntPtr.Zero)
+            if (client == IntPtr.Zero)
             {
                 FindModules();
-                if (hw == IntPtr.Zero || client == IntPtr.Zero)
+                if (client == IntPtr.Zero)
                 {
                     Status = "Cry of Fear is starting";
                     return false;
@@ -132,17 +135,16 @@ namespace LiveSplit.ReCoFSplit
 
                 if (autosplit == IntPtr.Zero || timer == IntPtr.Zero)
                 {
-                    Status = "No ReCoF run timer in client.dll (an older ReCoF or retail Cry of Fear, which keeps using cryoffear.asl)";
+                    Status = "No ReCoF run timer (version 2) in client.dll: an older ReCoF, or retail Cry of Fear, which keeps using cryoffear.asl";
                     return false;
                 }
 
-                cutscenePtr = ReadPointer(autosplit + 20);
                 igtPtr = ReadPointer(autosplit + 24);
                 musicPtr = ReadPointer(autosplit + 28);
                 savestatePtr = ReadPointer(autosplit + 32);
 
-                byte[] t = ReadBytes(timer, 56);
-                ReCoFVersion = Encoding.ASCII.GetString(t, 40, 16).TrimEnd('\0');
+                byte[] t = ReadBytes(timer, TimerSize);
+                ReCoFVersion = Text(t, 40, 16);
                 timerBlock = timer;
                 Status = "Connected to ReCoF " + ReCoFVersion;
                 return true;
@@ -176,11 +178,7 @@ namespace LiveSplit.ReCoFSplit
                     continue;
 
                 string n = name.ToString().ToLowerInvariant();
-                if (n == "hw.dll")
-                {
-                    hw = info.lpBaseOfDll;
-                }
-                else if (n == "client.dll")
+                if (n == "client.dll")
                 {
                     client = info.lpBaseOfDll;
                     clientSize = (int)info.SizeOfImage;
@@ -231,7 +229,6 @@ namespace LiveSplit.ReCoFSplit
         }
 
         float ReadFloat(IntPtr address) { return BitConverter.ToSingle(ReadBytes(address, 4), 0); }
-        int ReadInt(IntPtr address) { return BitConverter.ToInt32(ReadBytes(address, 4), 0); }
 
         // the game is 32-bit: its pointers are 4 bytes
         IntPtr ReadPointer(IntPtr address) { return (IntPtr)(long)BitConverter.ToUInt32(ReadBytes(address, 4), 0); }
@@ -250,7 +247,6 @@ namespace LiveSplit.ReCoFSplit
 
             handle = IntPtr.Zero;
             process = null;
-            hw = IntPtr.Zero;
             client = IntPtr.Zero;
             timerBlock = IntPtr.Zero;
             ReCoFVersion = "";

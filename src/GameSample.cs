@@ -5,7 +5,8 @@ namespace LiveSplit.ReCoFSplit
     /// </summary>
     public sealed class GameSample
     {
-        // the cryoffear.asl values (hw.dll at the offsets ReCoF keeps, client.dll through the g_RcAutosplit block)
+        // the cryoffear.asl values, in the script's sense: the game reports them (g_RcRunTimer), and the decal
+        // counter, the music and the save state come through g_RcAutosplit
         public float Pause;         // nonzero while the game is paused
         public float Loading;       // 0 while a map loads
         public float CanMove;       // 0 while the player cannot move
