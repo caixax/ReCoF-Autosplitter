@@ -33,7 +33,7 @@ The page has the layout of BunnySplit's.
 
 ## The game's timer
 
-ReCoF counts the time `cryoffear.asl` counts: real time without pauses, loads, the menus and the cutscenes that take control away. It starts, resets and stops where the script does (`rc_timer_auto 1`, the default). By hand, as BunnymodXT's `bxt_timer_*`:
+ReCoF counts the time `cryoffear.asl` counts: real time without pauses, loads, the menus and the cutscenes that take control away. It starts and resets only by hand, as BunnymodXT's `bxt_timer_*`, and stops by itself at the endings:
 
 - `rc_timer_start` starts a run from zero after a reset, or goes on with a stopped one.
 - `rc_timer_stop` stops the time until `rc_timer_start`.
