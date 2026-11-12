@@ -31,7 +31,7 @@ namespace LiveSplit.ReCoFSplit
             return new ReCoFSplitComponent(state);
         }
 
-        // no update server while the component is private
+        // no LiveSplit update server: new versions come from the GitHub releases
         public string UpdateName
         {
             get { return Name; }

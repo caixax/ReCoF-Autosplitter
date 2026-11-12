@@ -2,7 +2,7 @@
 
 A LiveSplit component for Cry of Fear on ReCoF, as BunnySplit is for BunnymodXT. The game's run timer drives LiveSplit: it starts and resets the run, and LiveSplit's Game Time is the game's time, so the timer on the game's HUD and LiveSplit always show the same time. Splits follow the rules of the community autosplitter, `cryoffear.asl`, so existing split files keep their segments, personal bests, golds and attempts.
 
-Private for now: not published, not tested in game yet.
+Download `LiveSplit.ReCoFSplit.dll` from the [latest release](https://github.com/caixax/ReCoF-Autosplitter/releases/latest). Retail Cry of Fear keeps using `cryoffear.asl`; this component is for [ReCoF](https://github.com/caixax/ReCoF).
 
 ## What it needs
 
@@ -11,7 +11,7 @@ Private for now: not published, not tested in game yet.
 
 ## Install
 
-1. Build it (below) or take `LiveSplit.ReCoFSplit.dll` from a build.
+1. Download `LiveSplit.ReCoFSplit.dll` from the [latest release](https://github.com/caixax/ReCoF-Autosplitter/releases/latest), or build it (below). If Windows blocks the file, open its Properties and tick Unblock.
 2. Copy `LiveSplit.ReCoFSplit.dll` into LiveSplit's `Components` folder.
 3. In LiveSplit, Edit Layout, add Control, ReCoF Autosplitter.
 4. In Edit Splits, turn off the scriptable autosplitter if `cryoffear.asl` is active, so the two do not both split.
@@ -70,6 +70,16 @@ dotnet run --project tests
 ```
 
 The tests check the split rules against the script's cases (water glitch, Lake Skip, the train and bridge scenes, chapters, the undo after a death) and replay every category whose splits are named by maps: each must split once per segment.
+
+## Credits
+
+- **IlyaTsyganov** wrote `cryoffear.asl`, the Cry of Fear autosplitter whose split rules this component follows; its code is not used.
+- **YaLTeR** made BunnySplit, whose settings page this one mimics, and BunnymodXT, whose timer ReCoF's follows.
+- **LiveSplit** is by its contributors; the component builds against `LiveSplit.Core.dll`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
 
 ## Categories
 
