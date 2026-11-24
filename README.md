@@ -1,5 +1,7 @@
 # ReCoF Autosplitter
 
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/m63drEUJ4v)
+
 A LiveSplit component for Cry of Fear on ReCoF, as BunnySplit is for BunnymodXT. The game's run timer drives LiveSplit: it starts and resets the run, and LiveSplit's Game Time is the game's time, so the timer on the game's HUD and LiveSplit always show the same time. Splits follow the rules of the community autosplitter, `cryoffear.asl`, so existing split files keep their segments, personal bests, golds and attempts.
 
 Download `LiveSplit.ReCoFSplit.dll` from the [latest release](https://github.com/caixax/ReCoF-Autosplitter/releases/latest). Retail Cry of Fear keeps using `cryoffear.asl`; this component is for [ReCoF](https://github.com/caixax/ReCoF).
